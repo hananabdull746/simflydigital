@@ -1,0 +1,44 @@
+{
+  "_readme": [
+    "ONE hand-maintained map from a Simfly canonical product id to the",
+    "supplier SKU on each digital supplier. Routing below is EXPLICIT —",
+    "an entry always wins; nothing is name-matched to decide WHERE an",
+    "order is placed.",
+    "",
+    "products.<canonicalId> = {",
+    "  \"prodseller\": \"<prodSeller product id> or null\",",
+    "  \"eklas\":      \"<eklas product id> or null\",",
+    "  \"locked\":     true   // optional: never fall back to the other supplier",
+    "}",
+    "",
+    "  both ids set  -> price compare: the cheaper IN STOCK supplier wins,",
+    "                   and checkout falls back to the other one if the",
+    "                   winner runs out / is broke / is not configured",
+    "  prodseller only (or no entry at all) -> ProdSeller, exactly as before",
+    "  prodseller: null + eklas set -> Eklas-only shelf item (canonical id = the key)",
+    "",
+    "EVERY Eklas product is listed on the shelf, entry or no entry:",
+    "  • an Eklas item whose polished shelf name matches one already listed",
+    "    is NOT shown twice — it is linked as that row's alternate, so the",
+    "    price compare and the fallback still use it",
+    "  • a unique Eklas item gets its own row, canonical id = \"eklas:<sku>\"",
+    "  • the same product Eklas lists twice under one name appears once",
+    "",
+    "Top level \"locked\": [canonicalId, …] does the same thing per product.",
+    "Default supplier for anything unmapped: \"default\".",
+    "",
+    "Hand-pinned example (Google Gemini): ProdSeller is the primary —",
+    "  it sells at 0.60 USD vs Eklas 0.94 — so it wins today and keeps",
+    "  winning while Eklas stays dearer; the entry links the two SKUs so",
+    "  ONE shelf row is shown and the compare runs automatically.",
+    "  Add \"locked\": true if Gemini should never move to Eklas at all."
+  ],
+  "default": "prodseller",
+  "locked": [],
+  "products": {
+    "6a31035939dc014325da2c66": {
+      "prodseller": "6a31035939dc014325da2c66",
+      "eklas": "9"
+    }
+  }
+}

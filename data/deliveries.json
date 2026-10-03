@@ -1,0 +1,31 @@
+{
+  "_readme": [
+    "eSIM delivery payloads the bot sends to a customer once the admin runs: confirm SMF-XXXX",
+    "Lookup order: orders['SMF-XXXX']  ->  plans['<planId>']  ->  default",
+    "image: optional path (relative to project root) or absolute path to a QR / activation image.",
+    "Set image to null to send text only. See assets/README.md for the recommended layout.",
+    "manual: true  -> NO automatic message is sent; the admin delivers the details",
+    "                  by hand (used for the 6GB / 10GB plans)."
+  ],
+  "default": {
+    "text": "*Simfly Store — eSIM Activation* ⚡\n\nAapka eSIM activate karne ke liye:\n\n1️⃣ Settings > Cellular / Mobile Data > *Add eSIM*\n2️⃣ \"Enter Details Manually\" select karein\n3️⃣ Activation code / QR scan karein\n4️⃣ Line ko label dein (e.g. Simfly) > Continue\n5️⃣ Data roaming *ON* kar lein\n\n⚡ Activation foran — koi waiting nahi.\n\nKoi masla ho toh isi chat me message karein. Shukriya! 🙏",
+    "image": null
+  },
+  "plans": {
+    "plan_500mb": {
+      "text": "500MB Activation Guide! 📲\n\n1️⃣ Eskimo App download\n   karein App Store /\n   Play Store se ✅\n\n2️⃣ Sign up karein\n   email se ✅\n\n3️⃣ \"Have A Code?\" pe\n   tap karein aur\n   yeh code daalen:\n   🔑 SD55823 ✅\n\n4️⃣ eSIM activate karein:\n   iPhone: Settings →\n   Mobile Data → Add eSIM\n   → Scan QR ✅\n\n   Samsung: Settings →\n   Connections → SIM\n   Manager → Scan QR ✅\n\n   Oppo/Vivo/Xiaomi:\n   Settings → Network →\n   Add eSIM → Scan QR ✅\n\n5️⃣ Mobile Data ON karein\n   Eskimo select karein\n   Internet shuru! 🚀\n\n⏳ Validity: No Expiry!\n\n❓ Masla ho? Batao! 💚",
+      "image": null
+    },
+    "plan_1gb": {
+      "text": "1GB Activation Guide! 📲\n\n1️⃣ Eskimo App download\n   karein App Store /\n   Play Store se ✅\n\n2️⃣ Sign up karein\n   email se ✅\n\n3️⃣ \"Have A Code?\" pe\n   tap karein aur\n   yeh code daalen:\n   🔑 SA1GB ✅\n\n4️⃣ eSIM activate karein:\n   iPhone: Settings →\n   Mobile Data → Add eSIM\n   → Scan QR ✅\n\n   Samsung: Settings →\n   Connections → SIM\n   Manager → Scan QR ✅\n\n   Oppo/Vivo/Xiaomi:\n   Settings → Network →\n   Add eSIM → Scan QR ✅\n\n5️⃣ Mobile Data ON karein\n   Eskimo select karein\n   Internet shuru! 🚀\n\n⏳ Validity: No Expiry!\n\n❓ Masla ho? Batao! 💚",
+      "image": null
+    },
+    "plan_6gb": {
+      "manual": true
+    },
+    "plan_10gb": {
+      "manual": true
+    }
+  },
+  "orders": {}
+}

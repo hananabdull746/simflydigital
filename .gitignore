@@ -1,0 +1,24 @@
+# Secrets / session
+.env
+auth_info/
+
+# Logs
+logs/
+*.log
+
+# Dependencies / OS
+node_modules/
+Thumbs.db
+.DS_Store
+
+# Runtime state — customer data lives ONLY on this machine.
+# Keep the folder tracked via db/.gitkeep; every JSON store inside
+# (orders, reviews, sessions, users, alerts) is ignored.
+/db/*.json
+data/store.json
+test/.tmp*
+
+# Generated WhatsApp catalogue (regenerate: npm run catalog:seed)
+/catalog/
+# Runtime file the live bot holds open
+whatsapp-channel-jid

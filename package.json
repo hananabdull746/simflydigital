@@ -1,0 +1,33 @@
+{
+  "name": "simfly-store-bot",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Simfly Store - Aapki Digital Zaroorat, Ek Store Mein | WhatsApp eSIM + digital commerce bot (Baileys, unofficial)",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "dev": "node --watch index.js",
+    "test": "node test/smoke.js",
+    "test:unit": "node --test test/unit.test.js",
+    "test:features": "node --test test/checkout2.test.js test/ai.test.js test/purplecow.test.js test/digital.test.js test/sales.test.js test/wallet.test.js test/catalog.test.js test/pacing.test.js test/store.test.js test/binance.test.js test/wacatalog.test.js test/wacatalog-api.test.js",
+    "test:all": "node test/smoke.js && node --test test/unit.test.js test/checkout2.test.js test/ai.test.js test/purplecow.test.js test/digital.test.js test/sales.test.js test/wallet.test.js test/catalog.test.js test/pacing.test.js test/store.test.js test/binance.test.js test/wacatalog.test.js test/wacatalog-api.test.js",
+    "probe": "node test/api-probe.js",
+    "catalog:seed": "node scripts/seedCatalog.js",
+    "catalog:seed:force": "node scripts/seedCatalog.js --force"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "@itsliaaa/baileys": "^0.3.18-final",
+    "axios": "^1.7.9",
+    "dotenv": "^18.0.4",
+    "link-preview-js": "^3.2.0",
+    "lowdb": "^7.0.1",
+    "node-cron": "^4.6.0",
+    "pino": "^9.14.0",
+    "qrcode-terminal": "^0.12.0"
+  },
+  "license": "MIT"
+}

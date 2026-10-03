@@ -1,0 +1,47 @@
+{
+  "network": "Telenor/Zong 4G",
+  "currency": "PKR",
+  "activation": "Activation guide in chat",
+  "sections": {
+    "short": "📶 Telenor/Zong 4G — 500MB & 1GB",
+    "monthly": "📶 Telenor/Zong 4G — 6GB & 10GB"
+  },
+  "plans": [
+    {
+      "id": "plan_500mb",
+      "name": "Telenor/Zong 500MB",
+      "data": "500MB",
+      "validity": "No Expiry",
+      "price": 100,
+      "section": "short",
+      "badge": null
+    },
+    {
+      "id": "plan_1gb",
+      "name": "Telenor/Zong 1GB",
+      "data": "1GB",
+      "validity": "No Expiry",
+      "price": 230,
+      "section": "short",
+      "badge": null
+    },
+    {
+      "id": "plan_6gb",
+      "name": "Telenor/Zong 6GB",
+      "data": "6GB",
+      "validity": "No Expiry",
+      "price": 1500,
+      "section": "monthly",
+      "badge": null
+    },
+    {
+      "id": "plan_10gb",
+      "name": "Telenor/Zong 10GB",
+      "data": "10GB",
+      "validity": "No Expiry",
+      "price": 2500,
+      "section": "monthly",
+      "badge": null
+    }
+  ]
+}

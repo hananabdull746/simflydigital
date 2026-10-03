@@ -1,0 +1,737 @@
+﻿<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Simfly Store · Admin Dashboard</title>
+<style>
+  :root {
+    --bg: #0d1117; --panel: #161b22; --line: #262d36; --txt: #e6edf3;
+    --dim: #8b98a5; --accent: #3fb950; --warn: #d29922; --bad: #f85149; --info: #58a6ff;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--txt);
+         font: 14px/1.5 ui-sans-serif, system-ui, "Segoe UI", Roboto, sans-serif; }
+  header { display: flex; align-items: center; gap: 16px; padding: 14px 20px;
+           border-bottom: 1px solid var(--line); position: sticky; top: 0;
+           background: rgba(13,17,23,.92); backdrop-filter: blur(6px); z-index: 5; }
+  h1 { font-size: 16px; margin: 0; letter-spacing: .3px; }
+  .pill { font-size: 12px; padding: 3px 9px; border-radius: 999px;
+          background: var(--panel); border: 1px solid var(--line); color: var(--dim); }
+  .pill.ok { color: var(--accent); border-color: #1f6f36; }
+  .pill.warn { color: var(--warn); border-color: #6b5312; }
+  .pill.bad { color: var(--bad); border-color: #7a2320; }
+  nav { display: flex; gap: 6px; padding: 10px 20px 0; flex-wrap: wrap; }
+  nav button { background: transparent; color: var(--dim); border: 1px solid transparent;
+               padding: 7px 13px; border-radius: 8px; cursor: pointer; font-size: 13px; }
+  nav button.active { background: var(--panel); color: var(--txt); border-color: var(--line); }
+  main { padding: 16px 20px 60px; }
+  .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; }
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 14px; }
+  .card .k { color: var(--dim); font-size: 12px; text-transform: uppercase; letter-spacing: .6px; }
+  .card .v { font-size: 24px; font-weight: 650; margin-top: 4px; }
+  .card .s { color: var(--dim); font-size: 12px; margin-top: 4px; }
+  table { width: 100%; border-collapse: collapse; margin-top: 14px; font-size: 13px; }
+  th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { color: var(--dim); font-weight: 600; font-size: 12px; text-transform: uppercase; }
+  tr:hover td { background: rgba(88,166,255,.05); }
+  .mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+  .st { font-size: 12px; padding: 2px 8px; border-radius: 999px; border: 1px solid var(--line); white-space: nowrap; }
+  .st.ok { color: var(--accent); } .st.wait { color: var(--warn); }
+  .st.bad { color: var(--bad); } .st.mute { color: var(--dim); }
+  .tools { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-top: 4px; }
+  input, select { background: var(--panel); color: var(--txt); border: 1px solid var(--line);
+                  border-radius: 8px; padding: 7px 10px; font-size: 13px; }
+  a.btn, button.btn { background: var(--panel); color: var(--txt); border: 1px solid var(--line);
+        border-radius: 8px; padding: 7px 12px; font-size: 13px; cursor: pointer; text-decoration: none; }
+  h2 { font-size: 15px; margin: 22px 0 6px; }
+  .muted { color: var(--dim); }
+  #err { color: var(--bad); margin-top: 10px; display: none; }
+  @media (max-width: 640px) { .cards { grid-template-columns: 1fr 1fr; } }
+</style>
+</head>
+<body>
+<header>
+  <h1 id="brand">Simfly Store · Dashboard</h1>
+  <span id="psPill" class="pill">ProdSeller …</span>
+  <span id="eklasPill" class="pill">Eklas …</span>
+  <span id="walPill" class="pill">Wallet …</span>
+  <span id="binPill" class="pill">Binance Pay …</span>
+  <span id="auditPill" class="pill">Ledger …</span>
+  <span class="pill" id="clock">—</span>
+</header>
+
+<nav>
+  <button data-tab="overview" class="active">Overview</button>
+  <button data-tab="orders">Orders</button>
+  <button data-tab="store">Digital Store</button>
+  <button data-tab="catalog">WhatsApp Catalog</button>
+  <button data-tab="wallets">Wallets</button>
+  <button data-tab="payments">Payments</button>
+  <button data-tab="audit">Audit</button>
+</nav>
+
+<main>
+  <div id="err"></div>
+
+  <section id="tab-overview">
+    <div class="cards" id="ovCards"></div>
+    <h2>Money</h2>
+    <div class="cards" id="moneyCards"></div>
+    <h2>Pipeline</h2>
+    <div class="cards" id="pipeCards"></div>
+  </section>
+
+  <section id="tab-orders" hidden>
+    <div class="tools">
+      <input id="q" placeholder="Search id / product / number" style="min-width:240px" />
+      <select id="status">
+        <option value="">All statuses</option>
+        <option value="await_screenshot">await_screenshot</option>
+        <option value="pending_admin">pending_admin</option>
+        <option value="awaiting_supplier_funding">awaiting_supplier_funding</option>
+        <option value="awaiting_activation">awaiting_activation</option>
+        <option value="fulfilled">fulfilled</option>
+        <option value="rejected">rejected</option>
+        <option value="cancelled">cancelled</option>
+        <option value="refunded">refunded</option>
+      </select>
+      <button class="btn" onclick="loadOrders()">Reload</button>
+      <a class="btn" id="csvOrders" href="#">⬇ CSV</a>
+      <span class="muted" id="orderCount"></span>
+    </div>
+    <table>
+      <thead><tr>
+        <th>Order</th><th>Item</th><th>Price</th><th>Type</th><th>Paid</th>
+        <th>Status</th><th>Customer</th><th>Reference</th><th>Updated</th>
+      </tr></thead>
+      <tbody id="orderBody"><tr><td colspan="9" class="muted">Loading…</td></tr></tbody>
+    </table>
+  </section>
+
+  <section id="tab-store" hidden>
+    <div class="cards" id="storeCards"></div>
+    <div class="tools">
+      <input id="storeFilter" placeholder="Filter by name / badge…" style="min-width:220px" oninput="renderProducts()" />
+      <span class="muted" id="storeMeta"></span>
+      <button class="btn" onclick="loadProducts()">Reload</button>
+    </div>
+    <table>
+      <thead><tr>
+<th>Product</th><th>Sell (PKR)</th><th>Cost (USD)</th><th>Cost (PKR)</th>
+<th>Margin</th><th>Markup</th><th>Stock</th><th>Visible</th><th>Delivery</th><th>Source</th>
+      </tr></thead>
+      <tbody id="productBody"><tr><td colspan="9" class="muted">Loading…</td></tr></tbody>
+    </table>
+  </section>
+
+  <section id="tab-catalog" hidden>
+    <div class="cards" id="catCards"></div>
+    <div class="tools">
+      <button class="btn" onclick="editCatalog(null)">➕ Add Product</button>
+      <button class="btn" id="catSyncBtn" onclick="syncCatalogAll(false)">🔄 Sync WhatsApp Catalog</button>
+      <button class="btn" onclick="loadCatalog()">Reload</button>
+      <input id="catFilter" placeholder="Filter by name / retailer id…" style="min-width:220px" oninput="renderCatalog()" />
+      <span class="muted" id="catMeta"></span>
+    </div>
+
+    <div class="card" id="catProgress" hidden style="margin-top:14px">
+      <div class="k" id="catProgressText">Sync idle</div>
+      <div style="height:8px;background:var(--panel);border:1px solid var(--line);border-radius:6px;margin-top:8px;overflow:hidden">
+        <div id="catBar" style="height:100%;width:0%;background:#25d366;transition:width .4s"></div>
+      </div>
+      <div class="muted" id="catFeed" style="margin-top:6px"></div>
+    </div>
+
+    <div class="card" id="catEditor" hidden style="margin-top:14px">
+      <div class="k" id="catEditorTitle">Add product</div>
+      <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:10px; margin-top:10px">
+        <label class="muted">Product Name
+          <input id="catName" style="width:100%" maxlength="70" placeholder="Google AI Pro · 18 Months" /></label>
+        <label class="muted">Retailer ID
+          <input id="catId" style="width:100%" placeholder="google-ai-pro-18-months" /></label>
+        <label class="muted">Price
+          <input id="catPrice" style="width:100%" type="number" min="1" placeholder="449" /></label>
+        <label class="muted">Currency
+          <select id="catCurrency" style="width:100%"><option>PKR</option><option>USD</option><option>AED</option></select></label>
+        <label class="muted">Availability
+          <select id="catAvail" style="width:100%"><option>in stock</option><option>out of stock</option></select></label>
+        <label class="muted">Product Image
+          <input id="catImage" type="file" accept="image/jpeg,image/png,image/webp" style="width:100%" /></label>
+      </div>
+      <label class="muted" style="display:block; margin-top:10px">Description
+        <textarea id="catDesc" rows="4" style="width:100%; background:var(--panel); color:var(--txt); border:1px solid var(--line); border-radius:8px; padding:7px 10px; font-size:13px"></textarea></label>
+      <div class="tools" style="margin-top:10px">
+        <button class="btn" onclick="saveCatalog()">💾 Save Product</button>
+        <button class="btn" onclick="closeEditor()">Cancel</button>
+        <span class="muted" id="catEditorMsg"></span>
+      </div>
+    </div>
+
+    <table>
+      <thead><tr>
+        <th>Product</th><th>Price</th><th>Image</th><th>WhatsApp ID</th><th>Status</th><th>Actions</th>
+      </tr></thead>
+      <tbody id="catBody"><tr><td colspan="6" class="muted">Loading…</td></tr></tbody>
+    </table>
+  </section>
+
+  <section id="tab-wallets" hidden>
+    <div class="cards" id="walCards"></div>
+    <div class="tools">
+      <button class="btn" onclick="loadWallets()">Reload</button>
+      <a class="btn" id="csvLedger" href="#">⬇ Ledger CSV</a>
+    </div>
+    <h2>Wallets</h2>
+    <table>
+      <thead><tr><th>Customer</th><th>Balance (PKR)</th><th>Updated</th></tr></thead>
+      <tbody id="walletBody"><tr><td colspan="3" class="muted">Loading…</td></tr></tbody>
+    </table>
+    <h2>Pending top-ups</h2>
+    <table>
+      <thead><tr><th>Ref</th><th>Amount</th><th>Phone</th><th>Status</th><th>Created</th></tr></thead>
+      <tbody id="topupBody"><tr><td colspan="5" class="muted">—</td></tr></tbody>
+    </table>
+    <h2>Ledger (newest first)</h2>
+    <table>
+      <thead><tr><th>Tx</th><th>Customer</th><th>Type</th><th>Amount</th><th>After</th><th>Order</th><th>Time</th></tr></thead>
+      <tbody id="ledgerBody"><tr><td colspan="7" class="muted">—</td></tr></tbody>
+    </table>
+  </section>
+
+  <section id="tab-payments" hidden>
+    <div class="cards" id="payCards"></div>
+    <div class="tools">
+      <button class="btn" onclick="loadPayments()">Reload</button>
+      <button class="btn" id="binRescan" onclick="rescanBinance()">🔄 Fetch Binance</button>
+      <span class="muted" id="payMeta"></span>
+    </div>
+    <p class="muted">💳 Binance Pay — Transaction IDs the bot looked up (auto-verification). Keys are never shown.</p>
+    <table>
+      <thead><tr>
+        <th>Time</th><th>Transaction ID</th><th>Amount</th><th>Currency</th><th>Claim</th><th>Order</th><th>Seen</th>
+      </tr></thead>
+      <tbody id="binBody"><tr><td colspan="7" class="muted">Loading…</td></tr></tbody>
+    </table>
+    <h2>NayaPay emails (parsed)</h2>
+    <table>
+      <thead><tr><th>Time</th><th>Txn</th><th>Amount</th><th>Status</th><th>Order</th></tr></thead>
+      <tbody id="mailBody"><tr><td colspan="5" class="muted">Loading…</td></tr></tbody>
+    </table>
+  </section>
+
+  <section id="tab-audit" hidden>
+    <p class="muted">Admin actions recorded by the bot (who confirmed what, when).</p>
+    <table>
+      <thead><tr><th>Time</th><th>Actor</th><th>Role</th><th>Action</th><th>Target</th><th>Detail</th></tr></thead>
+      <tbody id="auditBody"><tr><td colspan="6" class="muted">Loading…</td></tr></tbody>
+    </table>
+  </section>
+</main>
+
+<script>
+  const TOKEN = new URLSearchParams(location.search).get('token') || '';
+  const api = (path) => `/api/${path}${path.includes('?') ? '&' : '?'}token=${encodeURIComponent(TOKEN)}`;
+  const money = (n) => `PKR ${Number(n || 0).toLocaleString('en-PK')}`;
+  const when = (iso) => iso ? new Date(iso).toLocaleString('en-GB', { day:'2-digit', month:'short', hour:'2-digit', minute:'2-digit' }) : '—';
+  const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;' }[c]));
+  const get = async (path) => {
+    const r = await fetch(api(path), { headers: TOKEN ? { Authorization: `Bearer ${TOKEN}` } : {} });
+    if (!r.ok) throw new Error(`${path} → ${r.status}`);
+    return r.json();
+  };
+
+  const STATUS_CLASS = {
+    fulfilled: 'ok', pending_admin: 'wait', awaiting_supplier_funding: 'wait',
+    awaiting_activation: 'wait', await_screenshot: 'wait',
+    rejected: 'bad', cancelled: 'mute', refunded: 'mute',
+  };
+  const st = (s) => `<span class="st ${STATUS_CLASS[s] || 'mute'}">${esc(s)}</span>`;
+
+  function card(k, v, s) {
+    return `<div class="card"><div class="k">${esc(k)}</div><div class="v">${v}</div>${s ? `<div class="s">${s}</div>` : ''}</div>`;
+  }
+
+  // ── tabs ────────────────────────────────────────────────
+  document.querySelectorAll('nav button').forEach((b) => b.addEventListener('click', () => {
+    document.querySelectorAll('nav button').forEach((x) => x.classList.toggle('active', x === b));
+    document.querySelectorAll('main section').forEach((s) => { s.hidden = s.id !== `tab-${b.dataset.tab}`; });
+    refresh();
+  }));
+
+  // ── overview ────────────────────────────────────────────
+  async function loadOverview() {
+    const o = await get('overview');
+    document.getElementById('brand').textContent = `${o.brand} · Dashboard`;
+    const ps = o.prodseller;
+    const psPill = document.getElementById('psPill');
+    psPill.textContent = ps.configured
+      ? `ProdSeller ${ps.balanceUsd == null ? '…' : '$' + Number(ps.balanceUsd).toFixed(2)}` + (ps.low ? ' ⚠️ LOW' : '')
+      : 'ProdSeller not configured';
+    psPill.className = `pill ${!ps.configured ? 'warn' : ps.low ? 'bad' : 'ok'}`;
+    const ek = o.eklas || {};
+    const ekPill = document.getElementById('eklasPill');
+    ekPill.textContent = ek.configured
+      ? `Eklas ${ek.balanceUsd == null ? '…' : '$' + Number(ek.balanceUsd).toFixed(2)}` + (ek.low ? ' ⚠️ LOW' : '')
+      : 'Eklas not configured';
+    ekPill.className = `pill ${!ek.configured ? 'warn' : ek.low ? 'bad' : 'ok'}`;
+    document.getElementById('walPill').textContent =
+      `Wallet ${o.wallet.enabled ? money(o.wallet.liability) + ' liability' : 'off'}`;
+    document.getElementById('walPill').className = `pill ${o.wallet.auditOk ? 'ok' : 'bad'}`;
+    document.getElementById('auditPill').textContent = o.wallet.auditOk ? 'Ledger ✓' : `Ledger ✗ ${o.wallet.auditIssues}`;
+    document.getElementById('auditPill').className = `pill ${o.wallet.auditOk ? 'ok' : 'bad'}`;
+    const bn = o.binance || {};
+    document.getElementById('binPill').textContent = bn.configured
+      ? `Binance Pay ${bn.mode}${bn.lastOk ? ' ✓' : ' …'}`
+      : 'Binance Pay off';
+    document.getElementById('binPill').className = `pill ${bn.configured ? 'ok' : 'warn'}`;
+
+    document.getElementById('ovCards').innerHTML =
+      card('Orders (all time)', o.orders.total) +
+      card('Delivered', o.orders.delivered) +
+      card('Revenue', money(o.orders.revenue)) +
+      card('Pending', o.orders.pending) +
+      card('Awaiting screenshot', o.orders.awaitingScreenshot) +
+      card('Activation in progress', o.orders.activating);
+
+    document.getElementById('moneyCards').innerHTML =
+      card('Wallet liability', money(o.wallet.liability), `${o.wallet.wallets} wallet(s)`) +
+      card('Pending top-ups', o.wallet.pendingTopups, o.wallet.enabled ? 'top-up flows waiting on verification' : 'wallet disabled') +
+      card('ProdSeller balance', ps.balanceUsd == null ? '—' : `$${Number(ps.balanceUsd).toFixed(2)}`,
+          `warn below $${ps.lowThresholdUsd}`) +
+      card('Eklas balance', (o.eklas && o.eklas.balanceUsd != null) ? `$${Number(o.eklas.balanceUsd).toFixed(2)}` : '—',
+          `warn below $${(o.eklas && o.eklas.lowThresholdUsd) || 15}${o.suppliers && o.suppliers.dual ? ' · dual-source' : ''}`) +
+      card('Default markup', `${ps.markupPercent}%`, `rate ${ps.usdPkrRate} PKR/USD`);
+
+    document.getElementById('pipeCards').innerHTML =
+      card('Digital orders', o.orders.digital) +
+      card('Wallet top-ups', o.orders.topups) +
+      card('Activation polls', ps.activePolls, 'orders waiting for the supplier key') +
+      card('Rejected', o.orders.rejected) +
+      card('Refunded', o.orders.refunded) +
+      card('Auto-verifier', o.verifier.auto);
+  }
+
+  // ── orders ──────────────────────────────────────────────
+  async function loadOrders() {
+    const q = document.getElementById('q').value.trim();
+    const status = document.getElementById('status').value;
+    const rows = await get(`orders?q=${encodeURIComponent(q)}&status=${encodeURIComponent(status)}`);
+    document.getElementById('orderCount').textContent = `${rows.length} shown`;
+    document.getElementById('csvOrders').href = api('export/orders.csv');
+    document.getElementById('orderBody').innerHTML = rows.length ? rows.map((o) => `
+      <tr>
+        <td class="mono">${esc(o.id)}</td>
+        <td>${esc(o.name)}${o.email ? `<div class="muted">📧 ${esc(o.email)}</div>` : ''}</td>
+        <td>${money(o.price)}</td>
+        <td>${esc(o.type)}</td>
+        <td>${esc(o.paidBy)}</td>
+        <td>${st(o.status)}</td>
+        <td class="mono">${esc(o.phone)}</td>
+        <td class="mono">${o.supplier ? `<span class="st mute">${esc(o.supplier)}</span> ` : ''}${esc(o.prodsellerOrderId || o.supplierOrderId || '—')}${o.keys.length ? `<div class="muted">🔑 ${o.keys.map(esc).join(', ')}</div>` : ''}</td>
+        <td class="muted">${when(o.updatedAt)}</td>
+      </tr>`).join('')
+      : '<tr><td colspan="9" class="muted">No orders match.</td></tr>';
+  }
+  document.getElementById('q').addEventListener('input', () => clearTimeout(window._t) || (window._t = setTimeout(loadOrders, 300)));
+  document.getElementById('status').addEventListener('change', loadOrders);
+
+  // ── digital store ───────────────────────────────────────
+  let storeRows = [];
+
+  function renderProducts() {
+    const q = (document.getElementById('storeFilter')?.value || '').trim().toLowerCase();
+    const rows = q
+      ? storeRows.filter((p) => `${p.name} ${p.badge || ''}`.toLowerCase().includes(q))
+      : storeRows;
+
+    const inStock = storeRows.filter((p) => p.stock).length;
+    const hidden = storeRows.filter((p) => !p.visible).length;
+    const instant = storeRows.filter((p) => !p.activation).length;
+    const sell = storeRows.reduce((s, p) => s + p.pricePkr, 0);
+    const cost = storeRows.reduce((s, p) => s + p.costPkr, 0);
+    const marginPct = sell > 0 ? Math.round(((sell - cost) / sell) * 100) : 0;
+
+    document.getElementById('storeCards').innerHTML =
+      card('Products', storeRows.length, `${instant} ⚡ instant · ${storeRows.length - instant} 📧 activation`) +
+      card('In stock', `${inStock}/${storeRows.length}`, inStock < storeRows.length ? `${storeRows.length - inStock} out of stock` : 'fully stocked') +
+      card('Sell price', money(sell), `${marginPct}% avg margin over cost`) +
+      card('Hidden', hidden, hidden ? 'admin-hidden from shoppers' : 'all visible');
+
+    document.getElementById('storeMeta').textContent = q
+      ? `${rows.length} of ${storeRows.length} product(s)`
+      : `${rows.length} product(s)`;
+
+    document.getElementById('productBody').innerHTML = rows.length ? rows.map((p) => `
+      <tr>
+        <td>${esc(p.name)}${p.badge ? ` <span class="st wait">${esc(p.badge)}</span>` : ''}<div class="muted mono">${esc(p.id)}</div></td>
+        <td>${money(p.pricePkr)}</td>
+        <td>$${Number(p.costUsd).toFixed(2)}</td>
+        <td>${money(p.costPkr)}</td>
+        <td>${money(p.marginPkr)} <span class="muted">(${Math.round((p.marginPkr / Math.max(1, p.pricePkr)) * 100)}%)</span></td>
+        <td>${p.markupPercent}%</td>
+        <td>${p.stock ? '<span class="st ok">in stock</span>' : '<span class="st bad">out</span>'}</td>
+        <td>${p.visible ? '<span class="st ok">visible</span>' : '<span class="st mute">hidden</span>'}</td>
+        <td>${p.activation ? '<span class="st wait">📧 activation</span>' : '⚡ instant'}</td>
+        <td><span class="st ${p.alternateSupplier ? 'wait' : 'mute'}">${esc(p.supplier || 'ProdSeller')}</span>${p.alternateSupplier ? `<div class="muted">↔ ${esc(p.alternateSupplier)}${p.savingUsd > 0 ? ` · save $${Number(p.savingUsd).toFixed(2)}` : ''}</div>` : ''}${p.locked ? '<div class="muted">🔒 locked</div>' : ''}</td>
+      </tr>`).join('')
+      : '<tr><td colspan="10" class="muted">No products (check PRODSELLER_API_KEY / EKLAS_API_KEY).</td></tr>';
+  }
+
+  async function loadProducts() {
+    storeRows = await get('products');
+    renderProducts();
+  }
+
+  // ── wallets ─────────────────────────────────────────────
+  async function loadWallets() {
+    const [w, ledger] = await Promise.all([get('wallets'), get('ledger?limit=60')]);
+    document.getElementById('csvLedger').href = api('export/ledger.csv');
+    document.getElementById('walCards').innerHTML =
+      card('Liability', money(w.liability)) +
+      card('Wallets', w.wallets.length) +
+      card('Pending top-ups', w.pendingTopups.length) +
+      card('Ledger audit', w.audit.ok ? '✓ clean' : `✗ ${w.audit.issues.length} mismatch`,
+          w.audit.ok ? `${w.audit.checked} checked` : w.audit.issues.slice(0, 2).map((i) => `${i.customerId} drift ${i.driftPkr}`).join(' · '));
+
+    document.getElementById('walletBody').innerHTML = w.wallets.length
+      ? w.wallets.map((x) => `<tr><td class="mono">${esc(x.customerId)}</td><td>${money(x.balancePkr)}</td><td class="muted">${when(x.updatedAt)}</td></tr>`).join('')
+      : '<tr><td colspan="3" class="muted">No wallets yet.</td></tr>';
+
+    document.getElementById('topupBody').innerHTML = w.pendingTopups.length
+      ? w.pendingTopups.map((t) => `<tr><td class="mono">${esc(t.id)}</td><td>${money(t.price)}</td><td class="mono">${esc(t.phone)}</td><td>${st(t.status)}</td><td class="muted">${when(t.createdAt)}</td></tr>`).join('')
+      : '<tr><td colspan="5" class="muted">No pending top-ups.</td></tr>';
+
+    document.getElementById('ledgerBody').innerHTML = ledger.length
+      ? ledger.map((t) => `<tr><td class="mono">${esc(t.id)}</td><td class="mono">${esc(t.customerId)}</td><td>${esc(t.type)}</td><td>${Number(t.amountPkr) >= 0 ? '+' : ''}${money(t.amountPkr)}</td><td>${money(t.balanceAfter)}</td><td class="mono">${esc(t.relatedOrderId || '—')}</td><td class="muted">${when(t.createdAt)}</td></tr>`).join('')
+      : '<tr><td colspan="7" class="muted">Ledger empty.</td></tr>';
+  }
+
+  // ── audit ───────────────────────────────────────────────
+  async function loadAudit() {
+    const rows = await get('audit?limit=80');
+    document.getElementById('auditBody').innerHTML = rows.length
+      ? rows.map((a) => `<tr><td class="muted">${when(a.at || a.createdAt)}</td><td class="mono">${esc(a.actor)}</td><td>${esc(a.role || '')}</td><td class="mono">${esc(a.action)}</td><td class="mono">${esc(a.target || '')}</td><td>${esc(a.detail || '')}</td></tr>`).join('')
+      : '<tr><td colspan="6" class="muted">No audit entries.</td></tr>';
+  }
+
+  // ── payments (💳 Binance Pay + NayaPay emails) ───────────
+  async function loadPayments() {
+    const p = await get('payments');
+    const b = p.binance || {};
+    const health = b.configured
+      ? '✅ ready'
+      : (b.hasKey ? '⚠️ BINANCE_PAY_ID missing' : '⚠️ API key missing');
+    document.getElementById('payCards').innerHTML =
+      card('Mode', esc(b.mode || '—'), 'off · shadow · auto (BINANCE_VERIFIER_MODE)') +
+      card('Config', health, `${b.payIdMasked ? 'Pay ID ' + esc(b.payIdMasked) : 'no Pay ID'}${b.keyMasked ? ' · key ' + esc(b.keyMasked) : ''}`) +
+      card('Cached tx', b.count ?? 0, `${b.claimed ?? 0} claimed · ${b.unclaimed ?? 0} unclaimed`) +
+      card('Verdicts', `${b.matched ?? 0} match`, `${b.shadowed ?? 0} shadow · ${b.blocked ?? 0} blocked`) +
+      card('Last fetch', b.lastOk ? when(b.lastOk) : 'never', b.lastError ? `<span style="color:var(--bad)">${esc(b.lastError)}</span>` : `rate ${b.rate ?? '—'} PKR/USDT`) +
+      card('NayaPay verifier', esc(p.verifierAuto || 'off'), 'auto-verifier setting');
+
+    document.getElementById('payMeta').textContent = b.lastError
+      ? `last error: ${b.lastError}`
+      : (b.lastFetch ? `last fetch ${when(b.lastFetch)}` : 'never fetched');
+
+    const rows = p.transactions || [];
+    document.getElementById('binBody').innerHTML = rows.length
+      ? rows.map((t) => `<tr>
+          <td class="muted">${when(t.timeIso || t.time)}</td>
+          <td class="mono">${esc(t.transactionId)}</td>
+          <td>${Number(t.amount) >= 0 ? '+' : ''}${Number(t.amount)}</td>
+          <td>${esc(t.currency || 'USDT')}</td>
+          <td>${t.status === 'claimed' ? '<span class="st ok">claimed</span>' : '<span class="st wait">unclaimed</span>'}</td>
+          <td class="mono">${esc(t.orderId || '—')}</td>
+          <td class="muted">${when(t.firstSeenAt)}</td>
+        </tr>`).join('')
+      : '<tr><td colspan="7" class="muted">No transactions cached yet — press “Fetch Binance”.</td></tr>';
+
+    const mails = p.nayapay?.emails || [];
+    document.getElementById('mailBody').innerHTML = mails.length
+      ? mails.map((m) => `<tr>
+          <td class="muted">${when(m.at)}</td>
+          <td class="mono">${esc(m.txn)}</td>
+          <td>${money(m.amount)}</td>
+          <td>${m.status === 'claimed' ? '<span class="st ok">claimed</span>' : '<span class="st wait">unclaimed</span>'}</td>
+          <td class="mono">${esc(m.matchedOrder || '—')}</td>
+        </tr>`).join('')
+      : '<tr><td colspan="5" class="muted">No payment emails parsed.</td></tr>';
+  }
+
+  // The only POST the dashboard makes: fetch history into the cache.
+  async function rescanBinance() {
+    const btn = document.getElementById('binRescan');
+    btn.disabled = true; btn.textContent = '⏳ Fetching…';
+    try {
+      const r = await fetch(api('payments/rescan'), {
+        method: 'POST',
+        headers: TOKEN ? { Authorization: `Bearer ${TOKEN}` } : {},
+      });
+      const out = await r.json().catch(() => ({}));
+      if (out.ok) {
+        document.getElementById('payMeta').textContent = `✅ ${out.scanned} transaction(s) fetched · cache ${out.cached}`;
+        document.getElementById('err').style.display = 'none';
+      } else {
+        document.getElementById('err').textContent = `⚠️ ${out.message || out.code || 'fetch failed'}`;
+        document.getElementById('err').style.display = 'block';
+      }
+    } finally {
+      btn.disabled = false; btn.textContent = '🔄 Fetch Binance';
+      await loadPayments();
+    }
+  }
+
+  // ── whatsapp catalog ─────────────────────────────────────
+  let catRows = [];
+  let catEditing = null;
+  const CAT_STATUS = { synced: 'ok', pending: 'wait', error: 'bad', never: 'mute' };
+  // synced > failed push > waiting > never pushed.
+  const catStatus = (p) => (p.synced ? 'synced'
+    : p.lastError || p.lastStatus === 'error' ? 'error'
+    : p.whatsappProductId ? 'pending' : 'never');
+  const catBadge = (p) => `<span class="st ${CAT_STATUS[catStatus(p)] || 'mute'}">${catStatus(p)}</span>`;
+
+  const send = async (path, method, body) => {
+    const r = await fetch(api(path), {
+      method,
+      headers: {
+        ...(TOKEN ? { Authorization: `Bearer ${TOKEN}` } : {}),
+        ...(body ? { 'Content-Type': 'application/json' } : {}),
+      },
+      body: body ? JSON.stringify(body) : undefined,
+    });
+    const out = await r.json().catch(() => ({ ok: false, code: `HTTP ${r.status}` }));
+    if (!r.ok) { const e = new Error(out.message || out.code || `${method} ${path} → ${r.status}`); e.detail = out; throw e; }
+    return out;
+  };
+
+  async function loadCatalog() {
+    try {
+      const out = await get('catalog');
+      catRows = out.products || [];
+      const c = out.connected;
+      document.getElementById('catCards').innerHTML =
+        card('WhatsApp', c ? '✅ connected' : `⚠️ ${esc(out.code || 'not connected')}`,
+             c ? 'catalog pushes allowed' : 'fix WA_SESSION before syncing') +
+        card('Local products', catRows.length, 'from catalog/products/') +
+        card('Synced', catRows.filter((p) => p.synced).length, 'confirmed by WhatsApp') +
+        card('Pending', catRows.filter((p) => !p.synced && !p.lastError).length, 'need a push / sync run') +
+        card('Errors', catRows.filter((p) => !p.synced && p.lastError).length, 'last push failed');
+      renderCatalog();
+    } catch (e) {
+      document.getElementById('catBody').innerHTML = `<tr><td colspan="6" class="muted">${esc(e.message)}</td></tr>`;
+    }
+  }
+
+  function renderCatalog() {
+    const q = (document.getElementById('catFilter')?.value || '').trim().toLowerCase();
+    const rows = q ? catRows.filter((p) => `${p.name} ${p.retailerId}`.toLowerCase().includes(q)) : catRows;
+    document.getElementById('catMeta').textContent = q ? `${rows.length} of ${catRows.length} product(s)` : `${rows.length} product(s)`;
+    document.getElementById('catBody').innerHTML = rows.length ? rows.map((p) => `
+      <tr>
+        <td>${esc(p.name)}<div class="muted mono">${esc(p.retailerId)}</div></td>
+        <td>${money(p.price)} <span class="muted">${esc(p.currency)}</span></td>
+        <td>${p.hasImage ? '🖼️' : '<span class="muted">none</span>'}</td>
+        <td class="mono">${p.whatsappProductId ? esc(String(p.whatsappProductId).slice(0, 18)) : '—'}${p.whatsappProductId ? '<div class="muted">on WhatsApp</div>' : ''}</td>
+        <td>${catBadge(p)}${p.lastError ? `<div class="muted">${esc(p.lastError)}</div>` : p.synced && p.lastSyncedAt ? `<div class="muted">${when(p.lastSyncedAt)}</div>` : ''}</td>
+        <td class="tools">
+          <button class="btn" onclick="editCatalog('${esc(p.retailerId)}')">Edit</button>
+          <button class="btn" onclick="pushCatalog('${esc(p.retailerId)}')">Push</button>
+          <button class="btn" onclick="deleteCatalog('${esc(p.retailerId)}')">Delete</button>
+        </td>
+      </tr>`).join('')
+      : '<tr><td colspan="6" class="muted">No local products. Run scripts/seedCatalog.js or “Add Product”.</td></tr>';
+  }
+
+  function closeEditor() {
+    catEditing = null;
+    document.getElementById('catEditor').hidden = true;
+    document.getElementById('catEditorMsg').textContent = '';
+    ['catName', 'catId', 'catPrice', 'catDesc'].forEach((id) => { document.getElementById(id).value = ''; });
+    document.getElementById('catImage').value = '';
+  }
+
+  function editCatalog(retailerId) {
+    const ed = document.getElementById('catEditor');
+    ed.hidden = false;
+    catEditing = retailerId;
+    const p = retailerId ? catRows.find((x) => x.retailerId === retailerId) : null;
+    document.getElementById('catEditorTitle').textContent = p ? `Edit ${p.name}` : 'Add product';
+    document.getElementById('catName').value = p?.name || '';
+    document.getElementById('catId').value = p?.retailerId || '';
+    document.getElementById('catId').disabled = Boolean(p);
+    document.getElementById('catPrice').value = p?.price ?? '';
+    document.getElementById('catCurrency').value = p?.currency || 'PKR';
+    document.getElementById('catAvail').value = p?.availability || 'in stock';
+    document.getElementById('catDesc').value = p?.description || '';
+    document.getElementById('catImage').value = '';
+    document.getElementById('catEditorMsg').textContent = '';
+    ed.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }
+
+  async function saveCatalog() {
+    const msg = document.getElementById('catEditorMsg');
+    const price = Number(document.getElementById('catPrice').value);
+    const body = {
+      name: document.getElementById('catName').value.trim(),
+      description: document.getElementById('catDesc').value.trim(),
+      price,
+      currency: document.getElementById('catCurrency').value,
+      availability: document.getElementById('catAvail').value,
+      push: true,
+    };
+    if (!body.name) { msg.textContent = '⚠️ product name is required'; return; }
+    if (!(price > 0)) { msg.textContent = '⚠️ price must be > 0'; return; }
+    if (!catEditing) {
+      const rid = document.getElementById('catId').value.trim();
+      if (!/^[a-z0-9][a-z0-9-]{1,63}$/.test(rid)) { msg.textContent = '⚠️ retailer id: a-z 0-9 -, 2-64 chars'; return; }
+      body.retailerId = rid;
+    }
+
+    msg.textContent = '⏳ saving…';
+    try {
+      const out = catEditing
+        ? await send(`catalog/${encodeURIComponent(catEditing)}`, 'PUT', body)
+        : await send('catalog', 'POST', body);
+      let wa = out.whatsapp || {};
+      const imgFile = document.getElementById('catImage').files[0];
+      if (imgFile && (out.product?.retailerId || catEditing)) {
+        // The picture change is its own push — use ITS WhatsApp result.
+        const up = await uploadCatalogImage(out.product?.retailerId || catEditing, imgFile, false);
+        wa = up.whatsapp || wa;
+      }
+      msg.textContent = wa.ok
+        ? '✅ saved · pushed to WhatsApp'
+        : `⚠️ saved locally · WhatsApp: ${wa.code || wa.message || 'not pushed'}`;
+      await loadCatalog();
+      if (wa.ok) setTimeout(closeEditor, 700);
+    } catch (e) {
+      msg.textContent = `⚠️ ${e.message}${e.detail?.error ? ` · ${e.detail.error}` : ''}`;
+    }
+  }
+
+  async function pushCatalog(retailerId) {
+    try {
+      const out = await send(`catalog/${encodeURIComponent(retailerId)}`, 'PUT', { push: true });
+      const wa = out.whatsapp || {};
+      document.getElementById('err').style.display = 'none';
+      if (!wa.ok) { await loadCatalog(); throw new Error(wa.message || wa.code || 'push failed'); }
+      await loadCatalog();
+    } catch (e) {
+      const d = e.detail || {};
+      document.getElementById('err').textContent = `⚠️ ${retailerId}: ${e.message}${d.hint ? ` · ${d.hint}` : ''}`;
+      document.getElementById('err').style.display = 'block';
+      await loadCatalog();
+    }
+  }
+
+  async function deleteCatalog(retailerId) {
+    if (!confirm(`Delete ${retailerId} from WhatsApp catalog AND local folder?\nThis removes the product image too.`)) return;
+    try {
+      const out = await send(`catalog/${encodeURIComponent(retailerId)}?confirmed=1`, 'DELETE');
+      const wa = out.whatsapp || {};
+      document.getElementById('err').style.display = wa.ok ? 'none' : 'block';
+      if (!wa.ok) document.getElementById('err').textContent = `⚠️ local removed · WhatsApp: ${wa.code || 'not deleted'}`;
+      await loadCatalog();
+    } catch (e) {
+      document.getElementById('err').textContent = `⚠️ ${e.message}`;
+      document.getElementById('err').style.display = 'block';
+      await loadCatalog();
+    }
+  }
+
+  async function syncCatalogAll(dryRun) {
+    const btn = document.getElementById('catSyncBtn');
+    const box = document.getElementById('catProgress');
+    const bar = document.getElementById('catBar');
+    const txt = document.getElementById('catProgressText');
+    const feed = document.getElementById('catFeed');
+    const errBox = document.getElementById('err');
+    const summarize = (s) => `${(s.created || []).length} created · ${(s.updated || []).length} updated · ` +
+      `${(s.unchanged || []).length} unchanged · ${(s.failed || []).length} failed` +
+      ((s.orphans || []).length ? ` · ${(s.orphans || []).length} remote-only` : '') +
+      (s.deferred ? ' · batch limit hit, run again' : '');
+    const paint = (s) => {
+      const total = Number(s.total || 0);
+      const done = Number(s.done || 0);
+      bar.style.width = `${total ? Math.round((done * 100) / total) : 0}%`;
+      txt.textContent = `Syncing ${done}/${total || '?'} · ` +
+        (s.current ? `${s.current.action} ${s.current.id}` : 'starting…') + ` · ${summarize(s)}`;
+      if (s.last) feed.textContent = `${s.last.ok ? '✅' : '❌'} ${s.last.action} ${s.last.id}${s.last.code ? ` · ${s.last.code}` : ''}`;
+    };
+
+    btn.disabled = true; btn.textContent = '⏳ syncing…';
+    box.hidden = false; bar.style.width = '0%';
+    txt.textContent = 'Syncing · starting…'; feed.textContent = '';
+
+    // The POST answers only when the run does — meanwhile the status
+    // endpoint streams the live counters (done/total/current/last).
+    let poll = null;
+    try {
+      const pending = send('catalog/sync', 'POST', { dryRun: Boolean(dryRun) });
+      poll = setInterval(async () => {
+        try { paint(await get('catalog/sync/status')); } catch { /* keep the last frame */ }
+      }, 400);
+      const out = await pending;
+      document.getElementById('catMeta').textContent = `sync: ${summarize(out)}`;
+      if ((out.failed || []).length) {
+        errBox.textContent = `⚠️ ${out.failed.length} push(es) failed: ` +
+          out.failed.slice(0, 3).map((f) => `${f.retailerId} (${f.code})`).join(', ');
+        errBox.style.display = 'block';
+      } else {
+        errBox.style.display = 'none';
+      }
+      await loadCatalog();
+    } catch (e) {
+      const d = e.detail || {};
+      errBox.textContent = `⚠️ sync: ${e.message}${(d.failed || []).length ? ` · ${summarize(d)}` : ''}`;
+      errBox.style.display = 'block';
+      await loadCatalog();
+    } finally {
+      if (poll) clearInterval(poll);
+      try { paint(await get('catalog/sync/status')); } catch { /* status is best-effort */ }
+      btn.disabled = false; btn.textContent = '🔄 Sync WhatsApp Catalog';
+    }
+  }
+
+  async function uploadCatalogImage(retailerId, file, reload = true) {
+    const fd = new FormData();
+    fd.append('image', file);
+    const r = await fetch(api(`catalog/${encodeURIComponent(retailerId)}/image`), {
+      method: 'POST',
+      headers: TOKEN ? { Authorization: `Bearer ${TOKEN}` } : {},
+      body: fd,
+    });
+    const out = await r.json().catch(() => ({ ok: false }));
+    if (!r.ok) throw new Error(out.message || out.code || 'image upload failed');
+    if (reload) await loadCatalog();
+    return out;
+  }
+
+  // ── refresh ─────────────────────────────────────────────
+  async function refresh() {
+    const err = document.getElementById('err');
+    try {
+      const active = document.querySelector('nav button.active').dataset.tab;
+      if (active === 'overview') await loadOverview();
+      if (active === 'orders') await loadOrders();
+      if (active === 'store') await loadProducts();
+      if (active === 'catalog') await loadCatalog();
+      if (active === 'wallets') await loadWallets();
+      if (active === 'payments') await loadPayments();
+      if (active === 'audit') await loadAudit();
+      err.style.display = 'none';
+      document.getElementById('clock').textContent = new Date().toLocaleTimeString('en-GB');
+    } catch (e) {
+      err.textContent = `⚠️ ${e.message}`;
+      err.style.display = 'block';
+    }
+  }
+
+  refresh();
+  loadOverview(); loadOrders(); loadProducts(); loadCatalog(); loadWallets(); loadPayments(); loadAudit();
+  setInterval(refresh, 30000);
+</script>
+</body>
+</html>
